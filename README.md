@@ -26,9 +26,6 @@ pip install -r requirements.txt
 #### Installing pre-Trained YOLOv8 
 install the weights [here](https://drive.google.com/file/d/1m0z9lXV3Fiwxj30PduxMuzsZsTEMuDI5/view?usp=share_link) and name it 'yolov8n.pt' in current working directory
 
-
-
-if this doesnt work 
 ### 2. Data Preparation
 
 #### Training Datasets 
@@ -48,7 +45,8 @@ Download dataset [here](https://drive.google.com/drive/folders/19NsJkiZWOFiFuSyn
 ```bash
 python inference.py --directory testdata/images/ --model models/detection_training/plate_detector{n}/weights/best.pt --multi-engine
 ```
-*n depends on how many times you have trained the model. Basically locate the desired model under models/detection_training/*
+*n depends on how many times you have trained the model. Basically locate the desired model under models/detection_training/plate_detector{n}/weights/best.pt. Usually, this will be 'plate_detector/' on first training, 'plate_detector2' on 2nd training and so on ...*
+
 
 
 ## 📁 Project Structure (impt stuff only)

@@ -1,0 +1,194 @@
+# Configuration for Malaysian License Plate Recognition System
+
+# Paths
+data:
+  # Raw data directory structure (pre-split YOLO format):
+  # data/raw/train/images/*.jpg
+  # data/raw/train/labels/*.txt
+  # data/raw/val/images/*.jpg
+  # data/raw/val/labels/*.txt
+  # data/raw/test/images/*.jpg
+  # data/raw/test/labels/*.txt
+  raw_dir: "data/raw"
+  
+  # Additional data (Kaggle dataset)
+  additional_data_dir: "data/additional_data"
+  
+  # Processed datasets (outputs from different workflows)
+  processed_dir: "data/processed"                      # Original: Malaysian plates only (augmented)
+  integrated_dir: "data/integrated"                    # NEW: Malaysian + Kaggle (no augmentation)
+  integrated_augmented_dir: "data/integrated_augmented"  # NEW: Malaysian + Kaggle (with augmentation)
+  
+  # Default dataset to use for training
+  # Options: "raw", "processed", "integrated", "integrated_augmented"
+  default_dataset: "integrated_augmented"
+
+models:
+  detection_model: "models/plate_detector.pt"
+  recognition_model: "models/plate_recognizer.pt"
+  checkpoint_dir: "models/checkpoints"
+
+outputs:
+  results_dir: "outputs/results"
+  visualizations_dir: "outputs/visualizations"
+  logs_dir: "outputs/logs"
+
+# Detection Module (YOLOv8)
+detection:
+  model_size: "yolov8n"  # n, s, m, l, x (recommend 's' or 'm' for better accuracy with more data)
+  confidence_threshold: 0.4
+  iou_threshold: 0.5
+  input_size: 640  # Increased from 416 for better detection with diverse plates
+  
+  # Training parameters
+  epochs: 100  # Reduced from 150 since more data = faster convergence
+  batch_size: 16
+  learning_rate: 0.001
+  patience: 20  # Early stopping patience
+  
+  # Augmentation (applies during YOLO training)
+  augment: true
+  augmentation_prob: 0.5
+
+# Recognition Module
+recognition:
+  # Model choice: 'easyocr', 'paddleocr', 'tesseract', 'custom'
+  ocr_engine: "easyocr"
+  languages: ['en']
+  
+  # Preprocessing
+  target_height: 64
+  target_width: 256
+  
+  # Custom CRNN (if using custom model)
+  crnn:
+    hidden_size: 256
+    num_layers: 2
+    epochs: 50
+    batch_size: 32
+    learning_rate: 0.001
+
+# Malaysian License Plate Format Validation
+plate_format:
+  # Enable/disable format validation (set to false when using international datasets)
+  enforce_validation: false  # Set to false for integrated datasets with non-Malaysian plates
+  
+  # Common Malaysian formats:
+  # ABC 1234 (standard)
+  # W 1234 ABC (Wilayah/Federal Territory)
+  # ABC 12 (older format)
+  patterns:
+    - "^[A-Z]{1,3}\\s*\\d{1,4}$"  # W 1234, ABC 1234
+    - "^[A-Z]{1,3}\\s*\\d{1,4}\\s*[A-Z]{0,2}$"  # ABC 1234, W 1234 A
+    - "^[A-Z]{3}\\s*[A-Z]{0,2}\\s*\\d{1,4}$"  # Sabah/Sarawak formats
+  
+  # Valid state codes
+  state_codes:
+    - "W"    # Wilayah Persekutuan Kuala Lumpur
+    - "P"    # Pulau Pinang (Penang)
+    - "V"    # Wilayah Persekutuan Labuan
+    - "F"    # Wilayah Persekutuan Putrajaya
+    
+  allowed_letters: "ABCDEFGHJKLMNPQRSTUVWXYZ"  # No I, O to avoid confusion
+  min_length: 4
+  max_length: 10
+
+# False Positive Filtering
+false_positive_filter:
+  enabled: true
+  
+  # Aspect ratio constraints (width/height)
+  min_aspect_ratio: 1.5
+  max_aspect_ratio: 6.0
+  
+  # Size constraints (relative to image)
+  min_plate_area: 0.001  # 0.1% of image
+  max_plate_area: 0.3    # 30% of image
+  
+  # Text density check
+  min_text_confidence: 0.5
+  
+  # Contextual filtering (reject if near these keywords)
+  reject_keywords:
+    - "BILLBOARD"
+    - "ADVERTISEMENT"
+    - "SHOP"
+    - "STORE"
+    - "RESTAURANT"
+    - "CAFE"
+
+# Data Augmentation Parameters (for data preparation scripts)
+augmentation:
+  enabled: true
+  techniques:
+    - name: "horizontal_flip"
+      prob: 0.5
+    - name: "rotation"
+      prob: 0.3
+      limit: 15
+    - name: "brightness_contrast"
+      prob: 0.5
+      brightness_limit: 0.2
+      contrast_limit: 0.2
+    - name: "blur"
+      prob: 0.2
+      blur_limit: 5
+    - name: "noise"
+      prob: 0.2
+    - name: "weather"
+      prob: 0.15  # Reduced from 0.2 since we have more diverse data
+      # rain, fog, sun_flare
+    - name: "perspective"
+      prob: 0.3
+      scale: 0.1
+
+# Dataset Integration Settings
+integration:
+  # Whether to integrate Kaggle dataset
+  use_additional_data: true
+  
+  # IMPORTANT: When using integrated datasets with non-Malaysian plates,
+  # set plate_format.enforce_validation to false
+  
+  # Split ratios for additional data
+  train_ratio: 0.7
+  val_ratio: 0.2
+  test_ratio: 0.1
+  
+  # Augmentation settings for integrated dataset
+  num_augmentations: 3  # Reduced from 5 since we have more base data
+  augment_only_train: true
+
+# Evaluation
+evaluation:
+  test_split: 0.2
+  val_split: 0.1
+  
+  # Metrics
+  detection_metrics:
+    - "mAP"
+    - "precision"
+    - "recall"
+    - "F1"
+  
+  recognition_metrics:
+    - "character_accuracy"
+    - "word_accuracy"
+    - "edit_distance"
+
+# Production Deployment
+deployment:
+  # API settings
+  api_host: "0.0.0.0"
+  api_port: 8000
+  max_image_size: 10485760  # 10MB
+  
+  # Performance
+  use_gpu: true
+  batch_inference: true
+  max_batch_size: 8
+  
+  # Monitoring
+  log_level: "INFO"
+  save_predictions: true
+  save_visualizations: false

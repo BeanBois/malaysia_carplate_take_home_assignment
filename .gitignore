@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+
+# Virtual Environment
+venv/
+
+# IDE
+.vscode/
+.DS_Store
+
+
+# Data
+data/additional_data/
+data/negative_examples/
+data/raw/
+data/integrated/
+data/integrated_augmented/
+!data
+testdata/images/
+!testdata
+
+# Models
+
+models/detection_training/*
+!models/detection_training
+
+
+# Outputs
+outputs/results/*
+
+# Logs
+*.log
+logs/
+*.out
+
+
